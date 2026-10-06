@@ -1,0 +1,1219 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\definecolor{codebg}{RGB}{245,245,245}
+\definecolor{codeframe}{RGB}{180,180,180}
+\definecolor{kw}{RGB}{0,90,160}
+\definecolor{cm}{RGB}{90,130,90}
+
+\lstdefinestyle{shell}{
+  language=bash,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  keywordstyle=\color{kw},
+  commentstyle=\color{cm},
+  showstringspaces=false,
+  columns=fullflexible,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+\lstdefinestyle{console}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  breaklines=true,
+  columns=fullflexible,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
+\lstset{style=shell}
+
+\theoremstyle{definition}
+\newtheorem{definicion}{Definición}[section]
+\newtheorem{ejemplo}{Ejemplo}[section]
+\newtheorem{ejercicio}{Ejercicio}[section]
+\theoremstyle{remark}
+\newtheorem{nota}{Nota}[section]
+\newtheorem{noc}{Mirada NOC}[section]
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Roadmap NOC -- Semana 1}
+\rhead{Fundamentos de redes}
+\cfoot{\thepage}
+
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\todo}{$\square$\ }
+
+\title{\textbf{Roadmap hacia un puesto NOC}\\[0.3em]
+\Large Semana 1: Fundamentos de redes y primer proyecto\\[0.2em]
+\large Base teórica, plan diario y guía de GitHub}
+\author{}
+\date{Martes 6 -- Lunes 12 de octubre de 2026}
+
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+\tableofcontents
+\newpage
+
+%=====================================================================
+\section{Presentación de la semana}
+%=====================================================================
+
+\subsection{Objetivo}
+
+Al terminar esta semana deberías poder explicar con tus palabras, y verificar con comandos, qué ocurre cuando una computadora se comunica con otra. Además, vas a tener publicado en GitHub tu primer proyecto: \texttt{network-diagnostics}.
+
+\textbf{Capacidades a alcanzar:}
+\begin{itemize}
+  \item Distinguir LAN, WAN e Internet.
+  \item Explicar el modelo TCP/IP y la encapsulación.
+  \item Distinguir dirección IP de dirección MAC y explicar para qué sirve ARP.
+  \item Calcular red, broadcast y rango de hosts para prefijos \texttt{/24}, \texttt{/25}, \texttt{/26}, \texttt{/27}, \texttt{/28} y \texttt{/30}.
+  \item Leer la salida de \cmd{ip addr}, \cmd{ip route}, \cmd{ip neigh}, \cmd{ping}, \cmd{traceroute}, \cmd{dig} y \cmd{ss}.
+  \item Diferenciar un problema de DNS de un problema de conectividad IP.
+  \item Escribir un script Bash sencillo que genere un reporte de diagnóstico.
+  \item Versionar y publicar un proyecto con Git y GitHub.
+\end{itemize}
+
+\subsection{Cómo usar este documento}
+
+Es a la vez una guía de estudio y una fuente de consulta. Las secciones \ref{sec:fundamentos} a \ref{sec:herramientas} son la teoría. La sección \ref{sec:proyecto} describe el proyecto. La sección \ref{sec:git} explica cómo publicarlo. La sección \ref{sec:plan} es el calendario día por día. Al final hay autoevaluación, soluciones y glosario.
+
+\begin{nota}
+Todo el código, los nombres de archivos y los comentarios dentro de los scripts están en inglés, que es el idioma de trabajo habitual en operaciones de red.
+\end{nota}
+
+\subsection{Carga horaria}
+
+Aproximadamente 8 horas en total. Es algo más que el promedio previsto (6--8 h) porque esta primera semana incluye la instalación de herramientas. Tu tesis sigue siendo la prioridad: si un día solo podés dedicar 30 minutos, hacé la parte más corta de la tarea y recuperá el sábado.
+
+\subsection{Calendario resumido}
+
+\begin{center}
+\begin{tabular}{@{}llp{8.2cm}@{}}
+\toprule
+\textbf{Día} & \textbf{Tiempo} & \textbf{Foco}\\
+\midrule
+Martes 6 & 1 h & Platzi (conceptos básicos) y setup de Git/GitHub\\
+Miércoles 7 & 1 h & Modelo de capas, IP y MAC\\
+Jueves 8 & 1 h & IPv4 y subnetting\\
+Viernes 9 & 1 h & Herramientas de diagnóstico\\
+Sábado 10 & 2,5 h & Construir el proyecto\\
+Domingo 11 & 1 h & Bonus, README y publicación\\
+Lunes 12 & 0,5 h & Repaso y cierre\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+La sección \ref{sec:plan} detalla cada día.
+
+%=====================================================================
+\section{Fundamentos de redes}\label{sec:fundamentos}
+%=====================================================================
+
+\subsection{Qué es una red}
+
+\begin{definicion}[Red de computadoras]
+Conjunto de dispositivos (computadoras, teléfonos, routers, servidores) interconectados mediante un medio de transmisión que les permite intercambiar datos siguiendo reglas comunes.
+\end{definicion}
+
+\begin{definicion}[Host]
+Cualquier dispositivo con una dirección propia que envía o recibe datos en la red: una PC, un servidor, un teléfono.
+\end{definicion}
+
+\begin{definicion}[Protocolo]
+Conjunto de reglas acordadas que define cómo se formatean, envían y reciben los datos. Dos dispositivos pueden comunicarse solo si hablan el mismo protocolo.
+\end{definicion}
+
+\subsection{Alcance: LAN, WAN e Internet}
+
+\begin{center}
+\begin{tabular}{@{}lp{5.5cm}p{4.5cm}@{}}
+\toprule
+\textbf{Tipo} & \textbf{Descripción} & \textbf{Ejemplo}\\
+\midrule
+LAN & Red local, área reducida & Tu casa, una oficina\\
+WAN & Red de área amplia que une sitios distantes & La red de un operador entre ciudades\\
+Internet & Red de redes interconectadas globalmente & Todo lo anterior unido\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{noc}
+Un operador como Claro administra enormes WAN. Un NOC (\textit{Network Operations Center}) vigila que esa red esté disponible y, cuando algo falla, lo detecta, lo diagnostica y lo escala al área correcta.
+\end{noc}
+
+\subsection{Elementos básicos}
+
+\begin{itemize}
+  \item \textbf{Switch:} conecta dispositivos dentro de una LAN.
+  \item \textbf{Router:} conecta redes distintas entre sí y decide por dónde enviar los paquetes.
+  \item \textbf{Gateway (puerta de enlace):} el router por el que un host sale hacia otras redes.
+  \item \textbf{Servidor / cliente:} el servidor ofrece un servicio (web, correo, DNS) y el cliente lo consume.
+  \item \textbf{ISP:} proveedor de acceso a Internet.
+\end{itemize}
+
+Topología mínima de referencia:
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+               INTERNET
+                  |
+            Router (gateway)
+                  |
+            +-----+-----+
+            |           |
+           PC 1        PC 2
+\end{lstlisting}
+
+\subsection{Medios de transmisión}
+
+\begin{itemize}
+  \item \textbf{Cobre} (cable de par trenzado, Ethernet): económico, distancias cortas (hasta 100 m en Ethernet estándar).
+  \item \textbf{Fibra óptica:} transmite luz, enorme capacidad y larga distancia. Es la base de las redes troncales.
+  \item \textbf{Inalámbrico} (Wi-Fi, radio, redes móviles): cómodo, pero compartido y más sensible a interferencias.
+\end{itemize}
+
+\subsection{Bits, bytes y velocidad}
+
+\begin{definicion}[Bit y byte]
+Un \emph{bit} es la unidad mínima de información (0 o 1). Un \emph{byte} son 8 bits.
+\end{definicion}
+\begin{itemize}
+  \item La velocidad de transmisión se mide en \emph{bits} por segundo: kbps, Mbps, Gbps.
+  \item El tamaño de archivos se mide en \emph{bytes}: KB, MB, GB.
+\end{itemize}
+
+\begin{ejemplo}
+Un enlace de $100$ Mbps transmite como máximo $100/8 = 12{,}5$ MB por segundo. Descargar un archivo de $500$ MB tomaría al menos $500/12{,}5 = 40$ segundos.
+\end{ejemplo}
+
+\begin{definicion}[Latencia y ancho de banda]
+\emph{Latencia}: tiempo que tarda un paquete en llegar (o en ir y volver). \emph{Ancho de banda}: cuántos bits por segundo puede transportar el enlace. Un enlace puede tener mucho ancho de banda y alta latencia, o al revés.
+\end{definicion}
+
+%=====================================================================
+\section{Modelos de capas}\label{sec:capas}
+%=====================================================================
+
+\subsection{Por qué existen las capas}
+
+Comunicar dos computadoras involucra muchos problemas distintos: señales físicas, direcciones, rutas, entrega confiable, aplicaciones. Se los separa en \emph{capas}. Cada capa resuelve un problema y ofrece un servicio a la capa superior. Esto permite cambiar una tecnología (por ejemplo, de cable a Wi-Fi) sin rehacer todo lo demás.
+
+\subsection{El modelo TCP/IP}
+
+\begin{center}
+\begin{tabular}{@{}llp{5.5cm}@{}}
+\toprule
+\textbf{Capa} & \textbf{Función} & \textbf{Ejemplos}\\
+\midrule
+Application & Servicios que usa el usuario & HTTP, HTTPS, DNS, SSH, SMTP\\
+Transport & Entrega entre procesos (puertos) & TCP, UDP\\
+Internet & Direccionamiento y ruteo entre redes & IPv4, IPv6, ICMP\\
+Network Access & Envío dentro del enlace local & Ethernet, Wi-Fi, ARP\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{El modelo OSI}
+
+OSI tiene siete capas. En la práctica se usa TCP/IP, pero en operaciones se habla en términos OSI (``es un problema de capa 2''). Conviene conocer la correspondencia.
+
+\begin{center}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{N.°} & \textbf{OSI} & \textbf{Equivale en TCP/IP} & \textbf{Ejemplo}\\
+\midrule
+7 & Aplicación & Application & HTTP, DNS\\
+6 & Presentación & Application & TLS, codificación\\
+5 & Sesión & Application & Gestión de sesiones\\
+4 & Transporte & Transport & TCP, UDP\\
+3 & Red & Internet & IP, ICMP\\
+2 & Enlace de datos & Network Access & Ethernet, MAC, ARP\\
+1 & Física & Network Access & Cobre, fibra, radio\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{noc}
+Un orden típico de diagnóstico es de abajo hacia arriba: ¿hay enlace físico (capa 1)? ¿Hay comunicación local (capa 2)? ¿Hay IP y rutas (capa 3)? ¿Funciona el transporte (capa 4)? ¿Responde la aplicación (capa 7)?
+\end{noc}
+
+\subsection{Encapsulación}
+
+\begin{definicion}[Encapsulación]
+Al enviar datos, cada capa agrega su propio encabezado al mensaje que recibe de la capa superior. En el destino se hace el proceso inverso (desencapsulación).
+\end{definicion}
+
+\begin{lstlisting}[style=console]
+Application :  [        DATA        ]
+Transport   :  [TCP][        DATA        ]            -> segment
+Internet    :  [IP][TCP][        DATA        ]        -> packet
+Net. Access :  [ETH][IP][TCP][   DATA   ][FCS]        -> frame
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Capa} & \textbf{Unidad de datos (PDU)}\\
+\midrule
+Transport (TCP) & Segmento\\
+Transport (UDP) & Datagrama\\
+Internet & Paquete\\
+Network Access & Trama (\emph{frame})\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=====================================================================
+\section{Direccionamiento}\label{sec:direccionamiento}
+%=====================================================================
+
+\subsection{Dirección MAC}
+
+\begin{definicion}[Dirección MAC]
+Identificador de 48 bits de una interfaz de red, escrito en hexadecimal (por ejemplo \texttt{3c:52:82:aa:10:5f}). Opera en la capa de enlace y solo tiene significado dentro de la red local.
+\end{definicion}
+
+\subsection{Dirección IP}
+
+\begin{definicion}[Dirección IPv4]
+Número de 32 bits que identifica a un host en una red y permite el ruteo entre redes. Se escribe como cuatro números decimales (0--255) separados por puntos.
+\end{definicion}
+
+\begin{ejemplo}[Conversión a binario]
+$192.168.1.20$ se escribe como
+\[
+\underbrace{11000000}_{192}.\underbrace{10101000}_{168}.\underbrace{00000001}_{1}.\underbrace{00010100}_{20}.
+\]
+\end{ejemplo}
+
+\begin{definicion}[IP frente a MAC]
+La IP indica \emph{dónde} está el host dentro de la red y puede cambiar (por ejemplo, si te conectás a otra red). La MAC identifica la \emph{placa} de red y se usa solo en el enlace local.
+\end{definicion}
+
+\subsection{ARP}
+
+\begin{definicion}[ARP]
+\emph{Address Resolution Protocol}: protocolo que, dentro de una LAN, permite averiguar la MAC asociada a una IP conocida. El host pregunta por broadcast ``¿quién tiene la IP X?'' y el dueño responde con su MAC.
+\end{definicion}
+
+\begin{ejemplo}[Salir a Internet]
+Tu PC (\texttt{192.168.1.20}) quiere llegar a \texttt{8.8.8.8}. Esa IP está fuera de tu red, así que el paquete se entrega al gateway (\texttt{192.168.1.1}). Para armar la trama Ethernet, tu PC necesita la \emph{MAC del gateway}, que obtiene con ARP. La IP destino del paquete sigue siendo \texttt{8.8.8.8}; solo la MAC destino de la trama es la del gateway.
+\end{ejemplo}
+
+\subsection{Máscara de red y notación CIDR}
+
+\begin{definicion}[Máscara y prefijo]
+La máscara indica qué bits de la dirección identifican la \emph{red} y cuáles identifican el \emph{host}. La notación CIDR \texttt{/n} indica que los primeros $n$ bits son de red.
+\end{definicion}
+
+\begin{ejemplo}
+$/24$ equivale a la máscara $11111111.11111111.11111111.00000000 = 255.255.255.0$. Los 24 primeros bits son de red y los 8 restantes de host.
+\end{ejemplo}
+
+\subsection{Red, broadcast y hosts}
+
+Dada una dirección con prefijo \texttt{/n}:
+
+\begin{itemize}
+  \item \textbf{Dirección de red:} todos los bits de host en 0. Identifica la red.
+  \item \textbf{Dirección de broadcast:} todos los bits de host en 1. Llega a todos los hosts de la red.
+  \item \textbf{Hosts útiles:} las direcciones entre ambas.
+\end{itemize}
+
+\[
+\text{direcciones totales} = 2^{32-n}, \qquad
+\text{hosts útiles} = 2^{32-n}-2 .
+\]
+
+\begin{center}
+\begin{tabular}{@{}cccc@{}}
+\toprule
+\textbf{Prefijo} & \textbf{Máscara} & \textbf{Direcciones} & \textbf{Hosts útiles}\\
+\midrule
+/8  & 255.0.0.0       & 16\,777\,216 & 16\,777\,214\\
+/16 & 255.255.0.0     & 65\,536      & 65\,534\\
+/24 & 255.255.255.0   & 256 & 254\\
+/25 & 255.255.255.128 & 128 & 126\\
+/26 & 255.255.255.192 & 64  & 62\\
+/27 & 255.255.255.224 & 32  & 30\\
+/28 & 255.255.255.240 & 16  & 14\\
+/30 & 255.255.255.252 & 4   & 2\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{nota}
+Un enlace punto a punto entre dos routers suele usar \texttt{/30}: dos hosts útiles, uno por extremo.
+\end{nota}
+
+\subsection{Método rápido por tamaño de bloque}
+
+Para prefijos entre \texttt{/25} y \texttt{/30}, el cambio ocurre en el cuarto octeto:
+
+\[
+\text{tamaño de bloque} = 256 - (\text{cuarto octeto de la máscara}).
+\]
+
+Las redes empiezan en múltiplos del tamaño de bloque. La dirección de red es el múltiplo más grande que no supera el último octeto del host. El broadcast es la dirección de red más el tamaño de bloque menos 1.
+
+\begin{ejemplo}[Resuelto: 192.168.1.70/26]
+La máscara es $255.255.255.192$, así que el bloque es $256-192=64$. Las redes comienzan en $0, 64, 128, 192$. Como $64 \le 70 < 128$:
+\begin{itemize}
+  \item Red: \texttt{192.168.1.64}
+  \item Broadcast: $64+64-1=127$, es decir \texttt{192.168.1.127}
+  \item Hosts útiles: de \texttt{192.168.1.65} a \texttt{192.168.1.126} (62 hosts)
+\end{itemize}
+Verificación en binario: $70 = 01000110$; con la máscara $11000000$ queda $01000000 = 64$.
+\end{ejemplo}
+
+\subsection{Direcciones privadas}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Rango} & \textbf{Uso}\\
+\midrule
+10.0.0.0/8 & Privada (redes grandes)\\
+172.16.0.0/12 & Privada\\
+192.168.0.0/16 & Privada (hogares y oficinas)\\
+127.0.0.0/8 & Loopback (la propia máquina)\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Las direcciones privadas no se rutean en Internet. Para salir se usa NAT, que veremos más adelante en el roadmap.
+
+\subsection{Gateway y tabla de rutas}
+
+\begin{definicion}[Tabla de rutas]
+Lista de reglas que indica por qué interfaz y a través de qué siguiente salto se envía un paquete según su destino.
+\end{definicion}
+
+\begin{lstlisting}[style=console]
+default via 192.168.1.1 dev wlp2s0 proto dhcp metric 600
+192.168.1.0/24 dev wlp2s0 proto kernel scope link src 192.168.1.20
+\end{lstlisting}
+
+Interpretación:
+\begin{itemize}
+  \item Primera línea: todo destino que no esté en una ruta más específica (\emph{default}) se envía al gateway \texttt{192.168.1.1}.
+  \item Segunda línea: la red \texttt{192.168.1.0/24} es local; se alcanza directamente por la interfaz \texttt{wlp2s0}, con origen \texttt{192.168.1.20}.
+\end{itemize}
+
+\begin{noc}
+Si el host no tiene ruta por defecto o el gateway no responde, no hay salida a Internet aunque la red local funcione. Es de los primeros puntos a revisar.
+\end{noc}
+
+%=====================================================================
+\section{Transporte, puertos y servicios}\label{sec:transporte}
+%=====================================================================
+
+\subsection{Puertos y sockets}
+
+\begin{definicion}[Puerto]
+Número de 16 bits (0--65535) que identifica un servicio o proceso dentro de un host. La IP dice a qué host; el puerto dice a qué servicio.
+\end{definicion}
+
+\begin{definicion}[Socket]
+Combinación de dirección IP y puerto, por ejemplo \texttt{192.168.1.20:22}.
+\end{definicion}
+
+\begin{center}
+\begin{tabular}{@{}clc@{}}
+\toprule
+\textbf{Puerto} & \textbf{Servicio} & \textbf{Transporte habitual}\\
+\midrule
+22 & SSH & TCP\\
+25 & SMTP (correo) & TCP\\
+53 & DNS & UDP (y TCP)\\
+67/68 & DHCP & UDP\\
+80 & HTTP & TCP\\
+443 & HTTPS & TCP\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{TCP}
+
+\begin{definicion}[TCP]
+Protocolo de transporte \emph{orientado a conexión} y confiable: establece una conexión, numera los datos, confirma la recepción y retransmite lo perdido.
+\end{definicion}
+
+El inicio de la conexión es el \emph{saludo de tres vías} (\textit{three-way handshake}):
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+Client                      Server
+  | ---------- SYN ---------> |
+  | <------- SYN-ACK -------- |
+  | ---------- ACK ---------> |
+  |      connection open      |
+\end{lstlisting}
+
+\subsection{UDP}
+
+\begin{definicion}[UDP]
+Protocolo de transporte \emph{sin conexión}: envía datagramas sin handshake ni confirmación. Tiene menos sobrecarga, pero no garantiza entrega ni orden.
+\end{definicion}
+
+\begin{center}
+\begin{tabular}{@{}p{3.2cm}p{5.5cm}p{5.5cm}@{}}
+\toprule
+ & \textbf{TCP} & \textbf{UDP}\\
+\midrule
+Conexión & Sí (handshake) & No\\
+Fiabilidad & Confirmaciones y retransmisión & Ninguna\\
+Sobrecarga & Mayor & Menor\\
+Usos típicos & Web, SSH, correo & DNS, streaming, voz\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{ICMP y ping}
+
+\begin{definicion}[ICMP]
+\emph{Internet Control Message Protocol}: protocolo de la capa Internet para mensajes de control y diagnóstico. \cmd{ping} usa \emph{Echo Request} y espera un \emph{Echo Reply}.
+\end{definicion}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ ping -c 4 8.8.8.8
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=20.1 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=118 time=19.7 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=118 time=21.3 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=118 time=20.5 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 19.7/20.4/21.3/0.6 ms
+\end{lstlisting}
+
+(Salida ilustrativa: los valores reales variarán.)
+
+\begin{itemize}
+  \item \texttt{time}: latencia de ida y vuelta (RTT) en milisegundos.
+  \item \texttt{packet loss}: porcentaje de paquetes sin respuesta.
+  \item \texttt{ttl}: tiempo de vida restante del paquete.
+\end{itemize}
+
+\begin{noc}
+``Pérdida de paquetes'' y ``aumento de latencia'' son dos síntomas que vas a escribir y leer a diario. Un ping que falla no prueba por sí solo que el destino esté caído: algunos equipos bloquean ICMP a propósito.
+\end{noc}
+
+\subsection{TTL y traceroute}
+
+\begin{definicion}[TTL]
+\emph{Time To Live}: campo del encabezado IP que cada router decrementa en 1. Si llega a 0, el paquete se descarta y el router avisa con un mensaje ICMP.
+\end{definicion}
+
+\cmd{traceroute} aprovecha esto: envía paquetes con TTL 1, 2, 3, \dots{} y registra qué router responde en cada salto, revelando el camino.
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ traceroute google.com
+ 1  192.168.1.1      1.2 ms
+ 2  10.20.0.1        8.5 ms
+ 3  200.xx.xx.xx    12.1 ms
+ 4  * * *
+ 5  142.xxx.xxx.xxx 21.0 ms
+\end{lstlisting}
+
+Una línea con \texttt{* * *} significa que ese salto no respondió. No siempre indica un fallo: muchos routers no contestan estos mensajes pero igualmente reenvían el tráfico.
+
+\subsection{DNS}
+
+\begin{definicion}[DNS]
+\emph{Domain Name System}: sistema distribuido que traduce nombres (\texttt{google.com}) a direcciones IP.
+\end{definicion}
+
+Flujo simplificado de una consulta:
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+PC -> resolver (e.g. router or ISP) -> root servers
+   -> TLD servers (.com) -> authoritative server -> IP address
+\end{lstlisting}
+
+El resolver guarda en caché las respuestas durante un tiempo (TTL del registro).
+
+\begin{center}
+\begin{tabular}{@{}cp{9cm}@{}}
+\toprule
+\textbf{Registro} & \textbf{Contenido}\\
+\midrule
+A & Nombre $\to$ dirección IPv4\\
+AAAA & Nombre $\to$ dirección IPv6\\
+CNAME & Alias de otro nombre\\
+MX & Servidor de correo del dominio\\
+NS & Servidores de nombres autoritativos\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{ejemplo}[Separar DNS de conectividad IP]
+Si \cmd{ping 8.8.8.8} funciona pero \cmd{ping google.com} falla con ``Name or service not known'', hay conectividad IP pero la resolución de nombres no funciona. El problema está en DNS, no en la red.
+\end{ejemplo}
+
+%=====================================================================
+\section{Herramientas de diagnóstico en Linux}\label{sec:herramientas}
+%=====================================================================
+
+\subsection{Resumen}
+
+\begin{center}
+\begin{tabular}{@{}lp{9.5cm}@{}}
+\toprule
+\textbf{Comando} & \textbf{Para qué sirve}\\
+\midrule
+\cmd{hostname} & Nombre de la máquina\\
+\cmd{ip addr} & Interfaces, direcciones IP y MAC\\
+\cmd{ip route} & Tabla de rutas y gateway\\
+\cmd{ip neigh} & Tabla de vecinos (ARP)\\
+\cmd{ping} & Conectividad y latencia (ICMP)\\
+\cmd{traceroute} & Camino hacia un destino\\
+\cmd{dig} / \cmd{nslookup} & Consultas DNS\\
+\cmd{ss -tuln} & Puertos TCP/UDP en escucha\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{ip addr}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ ip addr
+2: wlp2s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 ...
+    link/ether 3c:52:82:aa:10:5f brd ff:ff:ff:ff:ff:ff
+    inet 192.168.1.20/24 brd 192.168.1.255 scope global dynamic wlp2s0
+\end{lstlisting}
+
+\begin{itemize}
+  \item \texttt{wlp2s0}: nombre de la interfaz.
+  \item \texttt{UP,LOWER\_UP}: interfaz activa y con enlace físico.
+  \item \texttt{link/ether}: dirección MAC.
+  \item \texttt{inet 192.168.1.20/24}: dirección IPv4 y prefijo.
+\end{itemize}
+
+\subsection{ip neigh}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ ip neigh
+192.168.1.1 dev wlp2s0 lladdr 00:11:22:33:44:55 REACHABLE
+\end{lstlisting}
+
+Muestra la MAC (\texttt{lladdr}) asociada a cada IP vecina, aprendida por ARP. El estado \texttt{REACHABLE} indica que se confirmó recientemente; \texttt{STALE} indica que la entrada es antigua; \texttt{FAILED} indica que no hubo respuesta.
+
+\subsection{dig}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ dig google.com +short
+142.250.xxx.xxx
+\end{lstlisting}
+
+Sin \texttt{+short} se ve la respuesta completa: la sección \texttt{ANSWER}, el TTL del registro y el servidor que respondió. Para consultar otro tipo de registro: \cmd{dig google.com MX}.
+
+\subsection{ss}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+$ ss -tuln
+Netid State  Local Address:Port
+tcp   LISTEN 0.0.0.0:22
+udp   UNCONN 127.0.0.53:53
+\end{lstlisting}
+
+Las opciones: \texttt{-t} TCP, \texttt{-u} UDP, \texttt{-l} en escucha (\textit{listening}), \texttt{-n} muestra números en lugar de nombres. \texttt{0.0.0.0:22} significa que hay un servicio escuchando en el puerto 22 en todas las interfaces.
+
+\subsection{Método de diagnóstico inicial}
+
+Ante ``no tengo Internet'', no se tocan configuraciones al azar. Se sigue una cadena de verificaciones, de lo más cercano a lo más lejano:
+
+\begin{center}
+\begin{tabular}{@{}clp{5.5cm}@{}}
+\toprule
+\textbf{Paso} & \textbf{Pregunta} & \textbf{Herramienta}\\
+\midrule
+1 & ¿La interfaz está activa y tiene IP? & \cmd{ip addr}\\
+2 & ¿Hay ruta por defecto? & \cmd{ip route}\\
+3 & ¿Responde el gateway? & \cmd{ping} a la IP del gateway\\
+4 & ¿Hay salida a Internet por IP? & \cmd{ping 8.8.8.8}\\
+5 & ¿Funciona DNS? & \cmd{dig google.com}\\
+6 & ¿Dónde se corta el camino? & \cmd{traceroute}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{@{}p{6cm}p{8cm}@{}}
+\toprule
+\textbf{Síntoma} & \textbf{Causa probable}\\
+\midrule
+Sin IP en la interfaz & Problema local o de DHCP\\
+Responde el gateway, falla \texttt{8.8.8.8} & Problema más allá de la LAN (router, ISP)\\
+Responde \texttt{8.8.8.8}, falla el nombre & Problema de DNS\\
+Latencia alta y pérdida intermitente & Congestión o enlace degradado\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=====================================================================
+\section{Proyecto 01: network-diagnostics}\label{sec:proyecto}
+%=====================================================================
+
+\subsection{Descripción}
+
+Un script Bash que inspecciona la configuración de red de una máquina Linux, ejecuta pruebas de conectividad y genera un reporte legible con resultados \texttt{[OK]} o \texttt{[FAIL]}.
+
+\subsection{Estructura del repositorio}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+network-diagnostics/
+|-- README.md
+|-- network_diagnostics.sh
+|-- results/
+|   `-- example.txt
+`-- docs/
+    `-- week01.md
+\end{lstlisting}
+
+\subsection{Requisitos}
+
+\begin{enumerate}
+  \item Mostrar el hostname y la configuración IP (\cmd{ip addr}).
+  \item Mostrar la tabla de rutas (\cmd{ip route}) y la tabla de vecinos (\cmd{ip neigh}).
+  \item Probar la conectividad a Internet con \cmd{ping} a \texttt{8.8.8.8} e imprimir \texttt{[OK]} o \texttt{[FAIL]}.
+  \item Probar la resolución DNS de \texttt{google.com} e imprimir \texttt{[OK]} o \texttt{[FAIL]}.
+  \item Listar los puertos en escucha (\cmd{ss -tuln}).
+  \item Código y comentarios en inglés.
+\end{enumerate}
+
+\textbf{Bonus:} aceptar un host como argumento (\texttt{./network\_diagnostics.sh google.com}) y mostrar: resolución DNS, IP obtenida, ping OK/FAIL, latencia promedio y porcentaje de pérdida.
+
+\subsection{Formato de salida esperado}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+=================================
+NETWORK DIAGNOSTICS REPORT
+=================================
+
+HOSTNAME
+-----------------
+my-laptop
+
+INTERNET CONNECTIVITY
+-----------------
+[OK] Internet connectivity
+
+DNS
+-----------------
+[OK] DNS resolution
+\end{lstlisting}
+
+\subsection{Conceptos de Bash necesarios}
+
+\begin{definicion}[Código de salida]
+Todo comando termina con un número: $0$ significa éxito y cualquier otro valor indica error. La variable \verb|$?| guarda el código del último comando. Es la base de cualquier chequeo automático.
+\end{definicion}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+# 1. Shebang: the first line selects the interpreter
+#!/usr/bin/env bash
+
+# 2. Functions and return codes
+check_internet() {
+    ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1
+}
+
+# 3. Conditionals using the exit code
+if check_internet; then
+    echo "[OK] Internet connectivity"
+else
+    echo "[FAIL] Internet connectivity"
+fi
+
+# 4. Positional argument with a default value
+TARGET="${1:-google.com}"
+\end{lstlisting}
+
+\begin{itemize}
+  \item \verb|> /dev/null 2>&1| descarta la salida normal y la de errores.
+  \item \verb|${1:-valor}| usa el primer argumento, o \texttt{valor} si no se pasó.
+  \item \verb|$(comando)| captura la salida de un comando en una variable.
+\end{itemize}
+
+\subsection{Esqueleto inicial}
+
+Completá las partes marcadas con \texttt{TODO}.
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+#!/usr/bin/env bash
+
+section() {
+    echo
+    echo "$1"
+    echo "-----------------"
+}
+
+check_internet() {
+    # TODO: ping 8.8.8.8 once and return success or failure
+    :
+}
+
+check_dns() {
+    # TODO: resolve google.com and return success or failure
+    :
+}
+
+echo "================================="
+echo "NETWORK DIAGNOSTICS REPORT"
+echo "================================="
+
+section "HOSTNAME"
+hostname
+
+section "IP CONFIGURATION"
+# TODO: ip addr
+
+# TODO: routing table, neighbor table, DNS check, listening ports
+\end{lstlisting}
+
+Ejecución:
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+chmod +x network_diagnostics.sh
+./network_diagnostics.sh
+./network_diagnostics.sh > results/example.txt
+\end{lstlisting}
+
+\begin{nota}
+Antes de publicar \texttt{results/example.txt}, revisá que no incluya información que no quieras hacer pública.
+\end{nota}
+
+\subsection{Plantilla de README}
+
+Un buen README explica qué hace el proyecto, cómo usarlo y qué se aprendió.
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+# Network Diagnostics
+
+A Bash script that checks the network status of a Linux machine
+and prints a readable report.
+
+## What it checks
+- IP configuration, routing table and ARP/neighbor table
+- Internet connectivity (ICMP)
+- DNS resolution
+- Listening ports
+
+## Usage
+    chmod +x network_diagnostics.sh
+    ./network_diagnostics.sh
+    ./network_diagnostics.sh example.com
+
+## Example output
+(paste a trimmed sample here)
+
+## What I learned
+- IP vs MAC, gateways and routing tables
+- How to tell a DNS problem from a connectivity problem
+- Basic Bash scripting for diagnostics
+
+## Next steps
+- Add subnet calculations
+- Export results to a log file
+\end{lstlisting}
+
+\subsection{Criterios de proyecto terminado}
+
+\begin{itemize}[label=$\square$]
+  \item El script corre sin errores en tu máquina.
+  \item Cada prueba muestra \texttt{[OK]} o \texttt{[FAIL]}.
+  \item Hay un ejemplo real en \texttt{results/}.
+  \item El README es claro y se ve bien renderizado en GitHub.
+  \item Las notas de \texttt{docs/week01.md} están completas.
+\end{itemize}
+
+%=====================================================================
+\section{Git y GitHub}\label{sec:git}
+%=====================================================================
+
+\subsection{Conceptos}
+
+\begin{definicion}[Git]
+Sistema de control de versiones que guarda el historial de cambios de tus archivos.
+\end{definicion}
+
+\begin{definicion}[GitHub]
+Servicio web que aloja repositorios Git. Es tu vidriera profesional: quienes revisen tu perfil verán tus proyectos.
+\end{definicion}
+
+\begin{itemize}
+  \item \textbf{Repositorio:} carpeta con el proyecto y su historial.
+  \item \textbf{Commit:} captura de un estado del proyecto, con un mensaje descriptivo.
+  \item \textbf{Remote (\texttt{origin}):} copia del repositorio en GitHub.
+  \item \textbf{Push:} enviar commits locales a GitHub.
+  \item \textbf{Branch (\texttt{main}):} línea de desarrollo principal.
+\end{itemize}
+
+\subsection{Instalación y configuración (una sola vez)}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+sudo apt install git
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+\end{lstlisting}
+
+\subsection{Autenticación con clave SSH}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+ssh-keygen -t ed25519 -C "you@example.com"
+cat ~/.ssh/id_ed25519.pub
+\end{lstlisting}
+
+Copiá la salida del segundo comando y pegala en GitHub: \emph{Settings} $\to$ \emph{SSH and GPG keys} $\to$ \emph{New SSH key}. Verificá con:
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+ssh -T git@github.com
+\end{lstlisting}
+
+\subsection{Crear y publicar el repositorio}
+
+\begin{enumerate}
+  \item En github.com, botón \emph{New}. Nombre: \texttt{network-diagnostics}. Público, \textbf{sin} README ni \texttt{.gitignore} (los creás localmente).
+  \item En tu máquina:
+\end{enumerate}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+cd network-diagnostics
+git init
+git add .
+git commit -m "Add initial project structure"
+git branch -M main
+git remote add origin git@github.com:YOUR_USERNAME/network-diagnostics.git
+git push -u origin main
+\end{lstlisting}
+
+\subsection{Flujo de trabajo habitual}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+git status                       # what changed
+git add .                        # stage changes
+git commit -m "Add DNS check"    # save a snapshot
+git push                         # upload to GitHub
+git log --oneline                # view history
+\end{lstlisting}
+
+\subsection{Buenas prácticas}
+
+\begin{itemize}
+  \item Commits chicos y frecuentes, con mensajes en inglés y en imperativo (``Add\dots'', ``Fix\dots'').
+  \item Nunca subas contraseñas, tokens ni datos personales.
+  \item Un repositorio por proyecto semanal. Más adelante armaremos un README de perfil que los enlace.
+\end{itemize}
+
+%=====================================================================
+\section{Plan día por día}\label{sec:plan}
+%=====================================================================
+
+\subsection{Martes 6 de octubre -- Arranque y setup (1 h)}
+
+\textbf{Estudiar:} sección \ref{sec:fundamentos}.
+
+\begin{itemize}[label=$\square$]
+  \item Platzi: Curso de Fundamentos de Redes, lecciones 2 a 6 (aprox.\ 24 min en total). Las lecciones siguientes están bloqueadas y probablemente se habilitan en orden.
+  \item Tomar notas con tus palabras (LAN, WAN, medios, bits y bytes, importancia de las redes).
+  \item Crear tu cuenta de GitHub, si todavía no la tenés.
+  \item Instalar y configurar Git (sección \ref{sec:git}).
+  \item Crear la carpeta \texttt{network-diagnostics/} con la estructura de la sección \ref{sec:proyecto}.
+  \item Crear el repositorio vacío en GitHub.
+\end{itemize}
+
+\textbf{Entregable:} repositorio creado.
+
+\subsection{Miércoles 7 de octubre -- Capas, IP y MAC (1 h)}
+
+\textbf{Estudiar:} secciones \ref{sec:capas} y \ref{sec:direccionamiento} (hasta ARP).
+
+\begin{itemize}[label=$\square$]
+  \item Platzi: lecciones ``Protocolos y Capas'' y ``Modelo TCP/IP''.
+  \item En \texttt{docs/week01.md}, resumir las cuatro capas de TCP/IP con tus palabras.
+  \item Ejecutar \cmd{ip addr} y \cmd{ip neigh}. Anotar tu IP, tu MAC y la MAC de tu gateway.
+  \item Dibujar a mano el viaje de un paquete desde tu PC a \texttt{8.8.8.8}, indicando qué IP y qué MAC se usan en cada tramo.
+\end{itemize}
+
+\textbf{Pregunta guía:} ¿por qué tu PC necesita la MAC del gateway para salir a Internet?
+
+\subsection{Jueves 8 de octubre -- IPv4 y subnetting (1 h)}
+
+\textbf{Estudiar:} resto de la sección \ref{sec:direccionamiento}.
+
+\begin{itemize}[label=$\square$]
+  \item Platzi: lección ``Direcciones IP''.
+  \item Memorizar la tabla de prefijos (\texttt{/24}, \texttt{/25}, \texttt{/26}, \texttt{/27}, \texttt{/28}, \texttt{/30}).
+  \item Resolver los ejercicios de la sección \ref{sec:ejsub} sin mirar las soluciones.
+  \item Ejecutar \cmd{ip route} e interpretar cada línea en \texttt{docs/week01.md}.
+\end{itemize}
+
+\subsection{Viernes 9 de octubre -- Herramientas de diagnóstico (1 h)}
+
+\textbf{Estudiar:} secciones \ref{sec:transporte} y \ref{sec:herramientas}.
+
+\begin{itemize}[label=$\square$]
+  \item Ejecutar y anotar qué significa cada salida:
+\end{itemize}
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+ping -c 4 8.8.8.8
+ping -c 4 google.com
+traceroute google.com      # if missing: sudo apt install traceroute
+dig google.com
+ss -tuln
+\end{lstlisting}
+
+\begin{itemize}[label=$\square$]
+  \item Identificar en la salida de \cmd{ss} al menos un servicio en escucha y su puerto.
+  \item Memorizar los puertos: 22, 25, 53, 67/68, 80, 443.
+  \item Practicar el método de diagnóstico de la sección \ref{sec:herramientas}.
+\end{itemize}
+
+\subsection{Sábado 10 de octubre -- Construir el proyecto (2,5 h)}
+
+\textbf{Estudiar:} sección \ref{sec:proyecto}.
+
+\begin{itemize}[label=$\square$]
+  \item Escribir \texttt{network\_diagnostics.sh} con los requisitos de la sección \ref{sec:proyecto}.
+  \item Probarlo con conexión y también sin conexión (por ejemplo, desactivando el Wi-Fi) para ver los \texttt{[FAIL]}.
+  \item Guardar una salida en \texttt{results/example.txt}.
+  \item Hacer un primer commit con el script funcionando.
+\end{itemize}
+
+\subsection{Domingo 11 de octubre -- Bonus, README y publicación (1 h)}
+
+\begin{itemize}[label=$\square$]
+  \item Bonus: aceptar un host como argumento y mostrar DNS, IP, ping, latencia promedio y pérdida.
+  \item Escribir el \texttt{README.md} con la plantilla de la sección \ref{sec:proyecto}.
+  \item Completar \texttt{docs/week01.md}.
+  \item \texttt{git add .}, \texttt{git commit} y \texttt{git push}.
+  \item Verificar en GitHub que el README se vea bien.
+\end{itemize}
+
+\subsection{Lunes 12 de octubre -- Repaso y cierre (30 min)}
+
+\begin{itemize}[label=$\square$]
+  \item Responder de memoria la autoevaluación (sección \ref{sec:auto}).
+  \item Rehacer los ejercicios de subnetting que más te costaron.
+  \item Revisar el repositorio como si fueras un reclutador: ¿se entiende qué hace en 30 segundos?
+  \item Anotar tus dudas y compartirlas para preparar la Semana 2 (Linux básico y switching).
+\end{itemize}
+
+\subsection{Checklist final}
+
+\begin{itemize}[label=$\square$]
+  \item Platzi: lecciones de Conceptos básicos completadas.
+  \item Notas en \texttt{docs/week01.md}.
+  \item Seis ejercicios de subnetting resueltos.
+  \item Script con reporte y chequeos \texttt{[OK]}/\texttt{[FAIL]}.
+  \item Bonus con host como argumento.
+  \item README completo.
+  \item Repositorio público en GitHub.
+\end{itemize}
+
+%=====================================================================
+\section{Ejercicios y autoevaluación}\label{sec:auto}
+%=====================================================================
+
+\subsection{Ejercicios de subnetting}\label{sec:ejsub}
+
+Para cada dirección, hallá la dirección de red, el broadcast y el rango de hosts útiles.
+
+\begin{enumerate}
+  \item \texttt{192.168.10.37/24}
+  \item \texttt{10.0.5.200/25}
+  \item \texttt{192.168.1.70/26}
+  \item \texttt{172.16.4.100/27}
+  \item \texttt{192.168.0.45/28}
+  \item \texttt{192.168.5.9/30}
+\end{enumerate}
+
+\subsection{Preguntas de autoevaluación}
+
+\begin{enumerate}
+  \item ¿Qué ocurre, paso a paso, cuando ejecutás \cmd{ping 8.8.8.8}?
+  \item ¿Qué diferencia hay entre una dirección IP y una MAC?
+  \item ¿Qué es un gateway y en qué comando lo ves?
+  \item ¿Cómo distinguís un fallo de DNS de un fallo de conectividad IP?
+  \item ¿Qué hace TCP que UDP no hace?
+  \item ¿Para qué sirve ARP y en qué capa actúa?
+  \item ¿Qué significa un \texttt{* * *} en \cmd{traceroute}?
+  \item ¿Cuántos hosts útiles tiene una red \texttt{/27}? ¿Y una \texttt{/30}?
+  \item ¿Qué indica el código de salida $0$ en un comando?
+  \item Un colega dice ``no hay Internet''. ¿Cuáles son tus primeras cuatro verificaciones y en qué orden?
+\end{enumerate}
+
+\subsection{Soluciones de subnetting}
+
+\begin{center}
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{N.°} & \textbf{Red} & \textbf{Broadcast} & \textbf{Hosts útiles}\\
+\midrule
+1 & 192.168.10.0   & 192.168.10.255 & .1 a .254\\
+2 & 10.0.5.128     & 10.0.5.255     & .129 a .254\\
+3 & 192.168.1.64   & 192.168.1.127  & .65 a .126\\
+4 & 172.16.4.96    & 172.16.4.127   & .97 a .126\\
+5 & 192.168.0.32   & 192.168.0.47   & .33 a .46\\
+6 & 192.168.5.8    & 192.168.5.11   & .9 a .10\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Pistas para las preguntas conceptuales}
+
+\begin{itemize}
+  \item \textbf{Pregunta 1:} hay resolución de nombre (si usás nombre), ARP para obtener la MAC del gateway, un paquete IP con ICMP Echo Request, el reenvío por los routers y un Echo Reply de vuelta.
+  \item \textbf{Pregunta 4:} si funciona \cmd{ping} por IP pero no por nombre, el problema es DNS.
+  \item \textbf{Pregunta 8:} \texttt{/27}: $2^5-2=30$; \texttt{/30}: $2^2-2=2$.
+  \item \textbf{Pregunta 10:} \cmd{ip addr}, \cmd{ip route}, ping al gateway, ping a una IP pública.
+\end{itemize}
+
+%=====================================================================
+\appendix
+\section{Glosario}
+%=====================================================================
+
+\begin{description}[style=nextline,leftmargin=1.5em]
+  \item[ARP] Protocolo que resuelve una IP a una MAC dentro de la LAN.
+  \item[Broadcast] Dirección que alcanza a todos los hosts de una red.
+  \item[CIDR] Notación \texttt{/n} que indica cuántos bits de la dirección corresponden a la red.
+  \item[DNS] Sistema que traduce nombres de dominio a direcciones IP.
+  \item[Encapsulación] Agregado de encabezados por cada capa al enviar datos.
+  \item[Gateway] Router por el que un host sale hacia otras redes.
+  \item[Host] Dispositivo con dirección propia en una red.
+  \item[ICMP] Protocolo de control y diagnóstico de la capa Internet; usado por \cmd{ping}.
+  \item[Latencia] Tiempo que tarda un paquete en llegar o en ir y volver.
+  \item[LAN / WAN] Red local / red de área amplia.
+  \item[MAC] Dirección de 48 bits de una interfaz de red.
+  \item[NOC] \textit{Network Operations Center}: centro que monitorea y gestiona la red.
+  \item[Packet loss] Porcentaje de paquetes que no llegan.
+  \item[Puerto] Número que identifica un servicio dentro de un host.
+  \item[Router] Dispositivo que reenvía paquetes entre redes distintas.
+  \item[Socket] Par IP y puerto.
+  \item[Switch] Dispositivo que conecta hosts dentro de una LAN.
+  \item[TCP / UDP] Protocolos de transporte: con conexión y confiable / sin conexión.
+  \item[TTL] Contador del paquete IP que limita el número de saltos.
+\end{description}
+
+%=====================================================================
+\section{Referencia rápida de comandos}
+%=====================================================================
+
+\begin{lstlisting}[
+  style=console,
+  columns=fixed
+]
+# Network configuration
+ip addr                    # interfaces, IPs, MACs
+ip route                   # routing table
+ip neigh                   # ARP table
+
+# Connectivity
+ping -c 4 8.8.8.8          # ICMP test, 4 packets
+traceroute google.com      # path to a destination
+
+# DNS
+dig google.com             # full DNS answer
+dig google.com +short      # only the answer
+nslookup google.com        # alternative DNS query
+
+# Sockets
+ss -tuln                   # listening TCP/UDP ports
+
+# Git
+git status
+git add .
+git commit -m "Message"
+git push
+git log --oneline
+\end{lstlisting}
+
+\end{document}
